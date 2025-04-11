@@ -694,12 +694,39 @@ async function leaveChannel() {
         // Leave the channel
         await client.leave();
         
-        // Clear remote video and add no-video div
-        remoteVideo.innerHTML = '<div class="no-video"></div>';
+        // Clear remote video container and first row
+        const remoteVideoContainer = document.getElementById('remoteVideo');
+        const firstRow = document.querySelector('.first-row');
+        
+        // Keep local video wrapper but clear its contents
+        const localVideoWrapper = document.getElementById('localVideo').parentElement;
         localVideo.innerHTML = '<div class="no-video"></div>';
         
-        // Reset remote users
+        // Clear first row and re-add local video
+        if (firstRow) {
+            firstRow.innerHTML = '';
+            firstRow.appendChild(localVideoWrapper);
+        }
+        
+        // Clear remote video container
+        if (remoteVideoContainer) {
+            remoteVideoContainer.innerHTML = '<div class="no-video"></div>';
+        }
+        
+        // Clear all SVC controls for remote users
+        const svcUsersContainer = document.getElementById('svc-users-container');
+        if (svcUsersContainer) {
+            // Keep only the global controls
+            const globalControls = svcUsersContainer.querySelector('.svc-global-controls');
+            svcUsersContainer.innerHTML = '';
+            if (globalControls) {
+                svcUsersContainer.appendChild(globalControls);
+            }
+        }
+        
+        // Reset remote users and layers
         remoteUsers = {};
+        layers = {};
         
         // Reset UI state
         joinBtn.disabled = false;
