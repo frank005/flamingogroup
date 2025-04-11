@@ -42,6 +42,37 @@ A feature-rich video conferencing application built with the Agora SDK, demonstr
 - Network quality indicators
 - Packet loss and latency tracking
 
+## URL Parameters
+
+The application supports the following URL parameters for easy configuration and sharing:
+
+### Required Parameters
+- `appId`: Your Agora App ID
+- `channel`: The channel name to join
+
+### Optional Parameters
+- `token`: Authentication token (if authentication is enabled)
+- `uid`: User ID for the connection
+- `autoJoin`: Set to 'true' to automatically join the channel on page load (default: 'false')
+
+### Video and Audio Settings
+- `videoProfile`: Video quality preset (e.g., '720p_3', '1080p_2')
+- `audioProfile`: Audio quality preset (e.g., 'speech_standard', 'music_standard')
+
+### Network Settings
+- `cloudProxy`: Cloud proxy mode ('0' for disabled, '3' for UDP, '5' for TCP)
+- `geoFence`: Geographic region ('GLOBAL', 'NA', 'ASIA', etc.)
+
+### SVC Settings
+- `svc`: Enable/disable SVC ('true' or 'false')
+- `spatialLayer`: Spatial layer setting (0-3, only applied if svc=true)
+- `temporalLayer`: Temporal layer setting (0-3, only applied if svc=true)
+
+Example URL:
+```
+https://your-domain.com/app?appId=xxx&channel=test&videoProfile=720p_3&svc=true&spatialLayer=2&temporalLayer=3&autoJoin=false
+```
+
 ## Setup
 
 1. Clone the repository

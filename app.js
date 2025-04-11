@@ -2063,8 +2063,18 @@ function copyInviteLink() {
     if (cloudProxySelect.value !== "0") params.set('cloudProxy', cloudProxySelect.value);
     if (geoFenceSelect.value !== "GLOBAL") params.set('geoFence', geoFenceSelect.value);
     
-    // Add auto-join parameter
-    params.set('autoJoin', 'true');
+    // Add SVC parameters if enabled
+    const enableSVCCheckbox = document.getElementById('enableSVC');
+    if (enableSVCCheckbox) {
+        params.set('svc', enableSVCCheckbox.checked.toString());
+        if (enableSVCCheckbox.checked) {
+            params.set('spatialLayer', svcSettings.all.spatialLayer.toString());
+            params.set('temporalLayer', svcSettings.all.temporalLayer.toString());
+        }
+    }
+    
+    // Set autoJoin to false by default
+    params.set('autoJoin', 'false');
     
     const inviteUrl = `${baseUrl}?${params.toString()}`;
     const inviteLinkInput = document.getElementById('inviteLink');
@@ -2115,16 +2125,47 @@ function handleUrlParameters() {
             geoFenceSelect.value = geoFence;
         }
     }
+
+    // Handle SVC settings
+    if (urlParams.has('svc')) {
+        const svcEnabled = urlParams.get('svc') === 'true';
+        const enableSVCCheckbox = document.getElementById('enableSVC');
+        if (enableSVCCheckbox) {
+            enableSVCCheckbox.checked = svcEnabled;
+            const svcControls = document.getElementById('svcControls');
+            if (svcControls) {
+                svcControls.style.display = svcEnabled ? 'block' : 'none';
+            }
+            isSVCEnabled = svcEnabled;
+        }
+
+        // Handle SVC layer settings if provided
+        if (svcEnabled) {
+            if (urlParams.has('spatialLayer')) {
+                const spatialLayer = parseInt(urlParams.get('spatialLayer'));
+                if (!isNaN(spatialLayer) && spatialLayer >= 0 && spatialLayer <= 3) {
+                    svcSettings.all.spatialLayer = spatialLayer;
+                }
+            }
+            if (urlParams.has('temporalLayer')) {
+                const temporalLayer = parseInt(urlParams.get('temporalLayer'));
+                if (!isNaN(temporalLayer) && temporalLayer >= 0 && temporalLayer <= 3) {
+                    svcSettings.all.temporalLayer = temporalLayer;
+                }
+            }
+        }
+    }
     
-    // Auto-join if parameter is present and we have the minimum required fields
+    // Auto-join if parameter is present and set to true
     if (urlParams.has('autoJoin') && 
+        urlParams.get('autoJoin') === 'true' && 
         urlParams.has('appId') && 
         urlParams.has('channel')) {
         // Small delay to ensure everything is initialized
         setTimeout(() => {
             joinChannel();
         }, 1000);
-  }
+    }
 }
 
 // Add keyboard shortcut for SVC popup
