@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flamingo Group Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/vb-2-1-0/agora-extension-virtual-background.js"></script>
+    <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/aidenoiser/index.js"></script>
+    <style>
+        /* Update button colors */
+        button {
+            background-color: #ff69b4 !important; /* Flamingo pink */
+            color: white !important;
+            border: none !important;
+        }
+        
+        button:hover {
+            background-color: #ff1493 !important; /* Deeper pink on hover */
+        }
+        
+        button:disabled {
+            background-color: #ffb6c1 !important; /* Lighter pink when disabled */
+            opacity: 0.5 !important;
+        }
+
+        /* Update stats background color */
+        .stat-item {
+            background-color: #ff69b4 !important;
+            color: white !important;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 4px;
+        }
+
+        /* Style for invite link input */
+        .invite-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #inviteLink {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .svc-popup-content {
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .svc-global-controls {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #ff69b4;
+        }
+
+        .svc-global-controls .svc-user-header {
+            color: #ff69b4;
+            font-weight: bold;
+        }
+
+        .svc-users-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .svc-user-controls {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .svc-user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .svc-layer-control {
+            margin: 10px 0;
+        }
+
+        .svc-layer-control label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .svc-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .apply-svc-btn {
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .apply-svc-btn:hover {
+            background-color: #ff1493;
+        }
+
+        .svc-popup {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            display: none;
+        }
+
+        .svc-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container span {
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .svc-checkbox-wrapper {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .checkbox-label-text {
+            margin-top: 5px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="https://imgix.ranker.com/user_node_img/3385/67683445/original/flamingo-photo-u5?w=650&q=50&fm=pjpg&fit=crop&crop=faces" alt="Flamingo Logo">
+                <h1>Flamingo Group Demo</h1>
+            </div>
+            <div class="invite-container">
+                <input type="text" id="inviteLink" readonly placeholder="Invite link will appear here">
+                <button onclick="copyInviteLink()">Copy Link</button>
+            </div>
+        </header>
+
+        <main>
+            <div class="controls">
+                <div class="input-group">
+                    <label for="appId">APP ID</label>
+                    <input type="text" id="appId" placeholder="Enter your APP ID">
+                </div>
+                <div class="input-group">
+                    <label for="token">Token (optional)</label>
+                    <input type="text" id="token" placeholder="Enter token">
+                </div>
+                <div class="input-group">
+                    <label for="channelName">Channel Name</label>
+                    <input type="text" id="channelName" placeholder="Enter channel name">
+                </div>
+                <div class="input-group">
+                    <label for="userId">User ID (optional)</label>
+                    <input type="text" id="userId" placeholder="Enter user ID">
+                </div>
+                <div class="input-group">
+                    <label for="micSelect">Select Microphone</label>
+                    <select id="micSelect"></select>
+                </div>
+                <div class="input-group">
+                    <label for="cameraSelect">Select Camera</label>
+                    <select id="cameraSelect"></select>
+                </div>
+                <div class="input-group">
+                    <label for="videoProfile">Video Profile</label>
+                    <select id="videoProfile">
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="audioProfile">Audio Profile</label>
+                    <select id="audioProfile">
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="cloudProxy">Cloud Proxy</label>
+                    <select id="cloudProxy">
+                        <option value="disabled">Disabled</option>
+                        <option value="enabled">Enabled</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="geoFence">Geo-Fence</label>
+                    <select id="geoFence">
+                        <option value="global">Global</option>
+                        <option value="us">United States</option>
+                        <option value="eu">Europe</option>
+                        <option value="asia">Asia</option>
+                        <option value="china">China</option>
+                        <option value="india">India</option>
+                        <option value="japan">Japan</option>
+                        <option value="korea">Korea</option>
+                        <option value="oceania">Oceania</option>
+                        <option value="south_america">South America</option>
+                        <option value="africa">Africa</option>
+                        <option value="hong_kong">Hong Kong & Macau</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="virtualBgType">Virtual Background Type</label>
+                    <select id="virtualBgType">
+                        <option value="img">Image</option>
+                        <option value="color">Color</option>
+                        <option value="blur">Blur</option>
+                        <option value="video">Video</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="input-group" id="virtualBgColorGroup" style="display: none;">
+                    <label for="virtualBgColor">Background Color</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="virtualBgColor" value="#4b2e83">
+                        <span id="colorValue">#4b2e83</span>
+                    </div>
+                </div>
+                <div class="input-group" id="virtualBgImgGroup">
+                    <label for="virtualBgImgUrl">Image URL</label>
+                    <input type="text" id="virtualBgImgUrl" placeholder="Enter image URL" value="https://images.unsplash.com/photo-1543852786-1cf6624b9987?ixlib=rb-4.0.3&auto=format&fit=cover&w=1500&q=80">
+                    <small class="small-text">Note: Image must be from a CORS-enabled source</small>
+                </div>
+                <div class="input-group" id="virtualBgVideoGroup" style="display: none;">
+                    <label for="virtualBgVideoUrl">Video URL</label>
+                    <input type="text" id="virtualBgVideoUrl" placeholder="Enter video URL" value="https://cdn.pixabay.com/video/2016/05/11/3092-166221773_large.mp4">
+                    <small class="small-text">Note: Video must be from a CORS-enabled source</small>
+                </div>
+                <div class="input-group" id="virtualBgBlurGroup" style="display: none;">
+                    <label for="virtualBgBlur">Blur Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="virtualBgBlur" min="1" max="3" step="1" value="2">
+                        <span id="blurValue">Medium</span>
+                    </div>
+                </div>
+                
+                
+                <div class="input-group horizontal-group">
+                    <label for="scale-list">ScaleDownBy</label>
+                    <div class="horizontal-inputs">
+                        <select id="scale-list">
+                            <option value="1">1</option>
+                            <option value="1.2">1.2</option>
+                            <option value="1.4">1.4</option>
+                            <option value="1.6">1.6</option>
+                            <option value="1.8">1.8</option>
+                            <option value="2">2</option>
+                            <option value="2.2">2.2</option>
+                            <option value="2.4">2.4</option>
+                            <option value="2.6">2.6</option>
+                            <option value="2.8">2.8</option>
+                            <option value="3">3</option>
+                        </select>
+                        <div class="touch-bitrate-checkbox">
+                            <input type="checkbox" id="touchBitrate" name="touchBitrate">
+                            <label for="touchBitrate">Bitrate Adj</label>
+                        </div>
+                    </div>
+                </div>
+                  
+            </div>
+
+            <div class="button-group">
+                <button id="joinBtn" class="primary">Join Channel</button>
+                <button id="leaveBtn" class="danger" disabled>Leave Channel</button>
+                <button id="muteMicBtn">Mute Mic</button>
+                <button id="muteCameraBtn">Mute Camera</button>
+                <button id="dualStreamBtn">Enable Dual Stream</button>
+                <button id="switchStreamBtn">Set to Low Quality</button>
+                <button id="virtualBgBtn">Toggle Virtual Background</button>
+                <button id="ainsBtn">Toggle AINS</button>
+            </div>
+
+            <div class="stats-overview">
+                <div id="overallStats" class="stats"></div>
+                <div class="graphs-container">
+                    <div id="networkQualityChart"></div>
+                    <div id="fpsChart"></div>
+                    <div id="virtualBgCostChart"></div>
+                    <div id="resolutionChart"></div>
+                </div>
+            </div>
+
+            <div class="video-container">
+                <div class="video-wrapper">
+                    <div class="video-box">
+                        <div id="localVideo"></div>
+                        <div id="localVideoStats" class="video-overlay-stats"></div>
+                    </div>
+                </div>
+                <div id="remoteVideo"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="svc-popup-overlay"></div>
+    <div class="svc-popup">
+        <h3>SVC Settings</h3>
+        <div class="svc-popup-content">
+            <div class="input-group svc-checkbox-wrapper">
+                <label for="enableSVC">
+                    <input type="checkbox" id="enableSVC">Enable SVC (VP9 Scalable Video Coding)
+                </label>
+                <div class="checkbox-label-text">
+                    <small>Enable before joining call or it won't work!</small>
+                </div>
+            </div>
+            
+            <!-- Container for individual user controls -->
+            <div id="svc-users-container" class="svc-users-container">
+                <!-- Individual user controls will be added here dynamically -->
+            </div>
+        </div>
+        <div class="svc-popup-footer">
+            <button class="cancel">Cancel</button>
+            <button class="save">Save Changes</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 
