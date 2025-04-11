@@ -1,109 +1,100 @@
-# Cat Cloud Proxy
+# Flamingo Group Demo
 
-A modern web-based video conferencing application built with Agora RTC SDK, featuring cloud proxy capabilities, virtual backgrounds, and real-time performance monitoring.
+A feature-rich video conferencing application built with the Agora SDK, demonstrating advanced capabilities including SVC (Scalable Video Coding), cloud proxy support, and real-time statistics.
 
 ## Features
 
-- 🎥 High-quality video conferencing
-- 🎤 Audio and video controls
-- 🌐 Cloud proxy support (UDP/TCP)
-- 🌍 Geo-fencing capabilities
-- 🎨 Virtual background support
-- 🎯 AI Noise Suppression (AINS)
-- 📊 Real-time performance monitoring
-- 📈 Network quality and FPS charts
-- 🔄 Dual stream support
-- 📱 Responsive design
+### Core Functionality
+- Real-time video and audio communication
+- Support for multiple participants
+- Adaptive video layout (local + first remote in top row, pairs below)
+- Mute/unmute controls for audio and video
+- Device selection for camera and microphone
+- Real-time network and performance statistics
 
-## Prerequisites
+### Advanced Features
+- SVC (VP9 Scalable Video Coding) support
+  - Configurable spatial and temporal layers
+  - Per-user SVC controls
+  - Global SVC settings
+- Dual Stream Mode
+  - Toggle between high and low quality streams
+  - Automatic stream switching based on network conditions
+- Virtual Background
+  - Color backgrounds
+  - Image backgrounds
+  - Video backgrounds
+  - Blur effect with adjustable strength
+- AI Noise Suppression (AINS)
+- Cloud Proxy Support
+  - UDP mode
+  - TCP mode with TLS encryption
+- Geographic Region Selection
+- Comprehensive Statistics Display
+  - Network quality metrics
+  - Video/Audio performance stats
+  - FPS and resolution monitoring
+  - Virtual background performance metrics
 
-- Modern web browser with WebRTC support
-- Agora account and App ID
-- Microphone and camera (optional)
+### Developer Tools
+- Real-time performance graphs
+- Detailed connection state monitoring
+- Network quality indicators
+- Packet loss and latency tracking
 
-## Installation
+## Setup
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/catProxy.git
-cd catProxy
-```
-
-2. Open `index.html` in your web browser or serve it using a local web server.
-
-## Configuration
-
-1. Get your Agora App ID from the [Agora Console](https://console.agora.io/)
-2. Enter your App ID in the application
-3. (Optional) Enter a token if you have enabled token authentication
-4. Enter a channel name to join
-5. (Optional) Enter a user ID
+1. Clone the repository
+2. Open `index.html` in a web browser
+3. Enter your Agora App ID
+4. (Optional) Enter a channel token if authentication is enabled
+5. Enter a channel name
+6. Click "Join" to start a session
 
 ## Usage
 
-1. **Join a Channel**
-   - Enter your App ID and channel name
-   - Click "Join Channel"
+### Basic Controls
+- Use the "Join" and "Leave" buttons to manage your session
+- Toggle your camera and microphone using the respective buttons
+- Select different cameras or microphones from the device dropdowns
 
-2. **Device Selection**
-   - Select your preferred microphone and camera
-   - Choose video quality profile
+### SVC Controls
+- Press 'S' key or click the game controller icon to access SVC settings
+- Enable SVC before joining the call
+- Adjust spatial (S) and temporal (T) layers globally or per user
+- Values range from 0-3 for both layer types
 
-3. **Cloud Proxy Settings**
-   - Enable/disable cloud proxy
-   - Select proxy mode (UDP/TCP)
-   - Choose geo-fencing region
+### Virtual Background
+1. Click "Enable Virtual Background"
+2. Choose from:
+   - Solid colors
+   - Custom images
+   - Video backgrounds
+   - Blur effects
+3. Adjust settings as needed
 
-4. **Additional Features**
-   - Toggle microphone/camera
-   - Enable/disable virtual background
-   - Toggle AI noise suppression
-   - Enable/disable dual stream
-   - Switch between streams
+### Cloud Proxy
+1. Select proxy mode from dropdown (UDP/TCP)
+2. Choose geographic region if needed
+3. Join the channel to activate proxy settings
 
-5. **Monitoring**
-   - View real-time network quality
-   - Monitor FPS and bitrate
-   - Track connection statistics
+## Requirements
+- Modern web browser with WebRTC support
+- Camera and microphone access
+- Stable internet connection
+- Agora App ID (get one from [Agora Console](https://console.agora.io/))
 
-## Technical Details
+## Performance Notes
+- SVC and Virtual Background features are CPU-intensive
+- Performance graphs help monitor system impact
+- Automatic quality adjustments based on network conditions
+- Cloud proxy adds slight latency but improves reliability
 
-### Video Profiles
-- 360p (640x360)
-- 480p (848x480)
-- 720p (1280x720)
-- 1080p (1920x1080)
-
-### Supported Regions
-- Global
-- Africa
-- Asia
-- China
-- Europe
-- Hong Kong & Macau
-- India
-- Japan
-- Korea
-- North America
-- Oceania
-- South America
-- United States
-
-### Dependencies
-- AgoraRTC SDK
-- Google Charts
-- Agora Virtual Background Extension
-- Agora AI Denoiser Extension
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Browser Support
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge (Chromium-based)
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [Agora.io](https://www.agora.io/) for providing the RTC SDK
-- Google Charts for visualization capabilities 
+This project is part of the Flamingo Group demo applications.
