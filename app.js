@@ -476,6 +476,12 @@ function handleUserUnpublished(user, mediaType) {
         
         // Update chart columns after user leaves
         updateChartColumns();
+
+        // If no more remote users, ensure remote container shows no-video div
+        const remoteVideoContainer = document.getElementById('remoteVideo');
+        if (Object.keys(remoteUsers).length === 0) {
+            remoteVideoContainer.innerHTML = '<div class="no-video"></div>';
+        }
     }
 }
 
@@ -655,7 +661,7 @@ async function joinChannel() {
 
         // Mute audio after joining
         if (localAudioTrack) {
-            await localAudioTrack.setmuted(false);
+            await localAudioTrack.setMuted(true);
             muteMicBtn.textContent = "Unmute Mic";
             showPopup("Audio muted by default");
         }
@@ -716,12 +722,12 @@ async function leaveChannel() {
 // Toggle microphone
 async function toggleMicrophone() {
     if (localAudioTrack) {
-        if (localAudioTrack.enabled) {
-            await localAudioTrack.setmuted(false);
-            muteMicBtn.textContent = "Unmute Mic";
-        } else {
-            await localAudioTrack.setmuted(true);
-            muteMicBtn.textContent = "Mute Mic";
+        try {
+            await localAudioTrack.setMuted(!localAudioTrack.muted);
+            muteMicBtn.textContent = localAudioTrack.muted ? "Unmute Mic" : "Mute Mic";
+        } catch (error) {
+            console.error("Error toggling microphone:", error);
+            showPopup("Failed to toggle microphone");
         }
     }
 }
@@ -729,15 +735,18 @@ async function toggleMicrophone() {
 // Toggle camera
 async function toggleCamera() {
     if (localVideoTrack) {
-        if (localVideoTrack.enabled) {
-            await localVideoTrack.setmuted(false);
-            muteCameraBtn.textContent = "Unmute Camera";
-            localVideo.innerHTML = '<div class="no-video"></div>';
-        } else {
-            await localVideoTrack.setmuted(true);
-            muteCameraBtn.textContent = "Mute Camera";
-            localVideo.innerHTML = '';
-            localVideoTrack.play("localVideo");
+        try {
+            await localVideoTrack.setMuted(!localVideoTrack.muted);
+            muteCameraBtn.textContent = localVideoTrack.muted ? "Unmute Camera" : "Mute Camera";
+            if (localVideoTrack.muted) {
+                localVideo.innerHTML = '<div class="no-video"></div>';
+            } else {
+                localVideo.innerHTML = '';
+                localVideoTrack.play("localVideo");
+            }
+        } catch (error) {
+            console.error("Error toggling camera:", error);
+            showPopup("Failed to toggle camera");
         }
     }
 }

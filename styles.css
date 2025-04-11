@@ -19,7 +19,7 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background: url('https://i.pinimg.com/originals/5c/03/16/5c0316eff8bdb521d1c23876c82677ab.jpg') no-repeat center center fixed;
+    background: url('https://images.unsplash.com/photo-1553520077-205eb37650fa?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') no-repeat center center fixed;
     background-size: cover;
     color: var(--text-color);
     line-height: 1.6;
@@ -174,6 +174,13 @@ header {
     position: relative;
 }
 
+/* Hide remote video container when it only has the no-video div */
+#remoteVideo:only-child,
+#remoteVideo:empty,
+#remoteVideo:has(.no-video:only-child) {
+    display: none;
+}
+
 .first-row {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -221,17 +228,10 @@ header {
 }
 
 .no-video {
-    position: absolute;
-    top: 0;
-    left: 0;
+    background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Phoenicopterus_ruber_in_S%C3%A3o_Paulo_Zoo.jpg/960px-Phoenicopterus_ruber_in_S%C3%A3o_Paulo_Zoo.jpg?20140824111544') center/cover no-repeat;
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: url('https://images.unsplash.com/photo-1543852786-1cf6624b9987?ixlib=rb-4.0.3&auto=format&fit=cover&w=1500&q=80') no-repeat center center;
-    background-size: cover;
-    z-index: 1;
+    min-height: 450px;
     border-radius: 8px;
 }
 
