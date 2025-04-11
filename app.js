@@ -727,6 +727,10 @@ async function leaveChannel() {
         // Reset remote users and layers
         remoteUsers = {};
         layers = {};
+
+        // Clear stats displays
+        document.getElementById('overallStats').innerHTML = '';
+        document.getElementById('localVideoStats').innerHTML = '';
         
         // Reset UI state
         joinBtn.disabled = false;
@@ -1468,7 +1472,7 @@ function drawNetworkChart() {
         networkChart.draw(networkData, {
             ...chartOptions,
             title: 'Network Quality',
-            vAxis: { title: 'Bitrate (Mbps)', minValue: 0, maxValue: 10 }
+            vAxis: { title: 'Bitrate (Mbps)', minValue: 0 }
         });
     } catch (error) {
         console.error("Error drawing network chart:", error);
@@ -1480,7 +1484,7 @@ function drawFPSChart() {
         fpsChart.draw(fpsData, {
             ...chartOptions,
             title: 'Frame Rate',
-            vAxis: { title: 'FPS', minValue: 0, maxValue: 60 }
+            vAxis: { title: 'FPS', minValue: 0 }
         });
     } catch (error) {
         console.error("Error drawing FPS chart:", error);
@@ -1492,12 +1496,12 @@ function drawResolutionChart() {
         resolutionChart.draw(resolutionData, {
             ...chartOptions,
             title: 'Resolution',
-            vAxis: { title: 'Pixels', minValue: 0, maxValue: 1920 }
+            vAxis: { title: 'Pixels', minValue: 0 }
         });
     } catch (error) {
         console.error("Error drawing resolution chart:", error);
     }
-    }
+}
 
 function drawVirtualBgCostChart() {
     try {
