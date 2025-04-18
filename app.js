@@ -12,6 +12,7 @@ let joined = false;
 let peerConnectionState = "disconnected";
 let connectionState = "disconnected";
 let relayState = "false";
+let virtualBackgroundProcessor = null; // Add global variable for virtual background processor
 
 //Agora net-quality stats
 var clientNetQuality = {uplink: 0, downlink: 0};
@@ -547,17 +548,6 @@ async function getDevices() {
 // Create local tracks
 async function createLocalTracks() {
     try {
-        // Create audio track with selected profile
-        /*const audioProfile = audioProfileSelect.value;
-        localVideoTrack = await AgoraRTC.createCameraVideoTrack({
-            encoderConfig: videoProfileSelect.value,
-            deviceId: cameraSelect.value,
-            scalabiltyMode: isSVCEnabled ? "3SL3TL" : undefined
-        });
-        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-            encoderConfig: audioProfile,
-            deviceId: micSelect.value
-        });*/
         [localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
             {
                 encoderConfig: audioProfile,
@@ -569,6 +559,9 @@ async function createLocalTracks() {
                 scalabiltyMode: isSVCEnabled ? "3SL3TL" : undefined
             }
         );
+
+        // Expose localVideoTrack to window for beauty.js
+        window.localVideoTrack = localVideoTrack;
 
         // Play local video track
         localVideo.innerHTML = ''; // Clear no-video div
@@ -680,6 +673,16 @@ async function leaveChannel() {
         // Stop stats monitoring
         stopStatsMonitoring();
         
+        // Clean up processors
+        if (window.cleanupProcessors) {
+            console.log("Cleaning up processors before leaving channel");
+            await window.cleanupProcessors();
+        }
+        
+        // Reset processor references
+        virtualBackgroundProcessor = null;
+        window.virtualBackgroundProcessor = null;
+        
         // Unpublish local tracks
         if (localAudioTrack) {
             localAudioTrack.close();
@@ -727,6 +730,26 @@ async function leaveChannel() {
         // Reset remote users and layers
         remoteUsers = {};
         layers = {};
+
+        // Reset effect states
+        isVirtualBackgroundEnabled = false;
+        isAinsEnabled = false;
+        if (window.isBeautyEnabled !== undefined) {
+            window.isBeautyEnabled = false;
+        }
+
+        // Reset UI buttons
+        virtualBgBtn.textContent = "Enable Virtual Background";
+        ainsBtn.textContent = "Enable AINS";
+        if (document.getElementById('beautyBtn')) {
+            document.getElementById('beautyBtn').textContent = "Enable Beauty";
+        }
+        
+        // Hide beauty controls
+        const beautyControls = document.getElementById('beautyControls');
+        if (beautyControls) {
+            beautyControls.style.display = 'none';
+        }
 
         // Clear stats displays
         document.getElementById('overallStats').innerHTML = '';
@@ -967,30 +990,36 @@ async function toggleVirtualBackground() {
             console.log("Enabling virtual background...");
             showPopup("Enabling virtual background...");
             
+            // Clean up all processors first to ensure a clean state
+            if (window.cleanupProcessors) {
+                console.log("Cleaning up processors before enabling virtual background");
+                await window.cleanupProcessors();
+            }
+            
             // Create and register virtual background extension
             const vb = new VirtualBackgroundExtension();
             AgoraRTC.registerExtensions([vb]);
             
             // Create processor
-            const processor = await vb.createProcessor();
+            virtualBackgroundProcessor = await vb.createProcessor();
             
             // Set up event handlers
-            processor.eventBus.on("PERFORMANCE_WARNING", () => {
+            virtualBackgroundProcessor.eventBus.on("PERFORMANCE_WARNING", () => {
                 console.warn("Performance warning!");
                 showPopup("VirtualBackground performance warning!");
             });
-            processor.eventBus.on("cost", (cost) => {
+            virtualBackgroundProcessor.eventBus.on("cost", (cost) => {
                 console.warn(`cost of vb is ${cost}`);
                 lastVirtualBgCost = cost;
             });
-            processor.onoverload = async () => {
+            virtualBackgroundProcessor.onoverload = async () => {
                 console.log("overload!");
                 showPopup("VirtualBackground overload!");
             };
 
             // Initialize processor
             try {
-                await processor.init("not_needed");
+                await virtualBackgroundProcessor.init("not_needed");
             } catch (error) {
                 console.error(error);
                 showPopup("Failed to initialize virtual background");
@@ -1031,41 +1060,53 @@ async function toggleVirtualBackground() {
                     break;
             }
 
-            processor.setOptions(options);
-            await processor.enable();
+            virtualBackgroundProcessor.setOptions(options);
+            await virtualBackgroundProcessor.enable();
             
-            // Always unpipe first to ensure clean state
-            try {
-                await localVideoTrack.unpipe();
-            } catch (error) {
-                console.log("No existing pipe to unpipe");
+            // Store the processor in the window object so beauty.js can access it
+            window.virtualBackgroundProcessor = virtualBackgroundProcessor;
+            
+            // Update state and UI before rebuilding pipeline
+            isVirtualBackgroundEnabled = true;
+            window.isVirtualBackgroundEnabled = true;
+            virtualBgBtn.textContent = "Disable Virtual Background";
+            
+            // Use rebuildVideoPipeline to set up the pipeline
+            if (window.rebuildVideoPipeline) {
+                await window.rebuildVideoPipeline();
             }
             
-            // Pipe the processor to the destination
-            await localVideoTrack.pipe(processor).pipe(localVideoTrack.processorDestination);
-            
-            isVirtualBackgroundEnabled = true;
-            virtualBgBtn.textContent = "Disable Virtual Background";
             showPopup("Virtual background enabled");
         } else {
             console.log("Disabling virtual background...");
             showPopup("Disabling virtual background...");
             
-            // Get the processor from the track
-            const processor = localVideoTrack.processor;
-            if (processor) {
-                // First unpipe the processor
-                await localVideoTrack.unpipe();
-                // Then disable and release
-                await processor.unpipe();
-                await processor.disable();
-                await processor.release();
-                // Clear the processor reference
-                localVideoTrack.processor = null;
+            // Update state and UI before rebuilding pipeline
+            isVirtualBackgroundEnabled = false;
+            window.isVirtualBackgroundEnabled = false;
+            virtualBgBtn.textContent = "Enable Virtual Background";
+            
+            // Clean up all processors first to ensure a clean state
+            if (window.cleanupProcessors) {
+                console.log("Cleaning up processors before disabling virtual background");
+                await window.cleanupProcessors();
             }
             
-            isVirtualBackgroundEnabled = false;
-            virtualBgBtn.textContent = "Enable Virtual Background";
+            // Get the processor from the track
+            if (virtualBackgroundProcessor) {
+                // Then disable and release
+                await virtualBackgroundProcessor.disable();
+                await virtualBackgroundProcessor.release();
+                // Clear the processor reference
+                virtualBackgroundProcessor = null;
+                window.virtualBackgroundProcessor = null;
+            }
+            
+            // Use rebuildVideoPipeline to rebuild with remaining processors
+            if (window.rebuildVideoPipeline) {
+                await window.rebuildVideoPipeline();
+            }
+            
             showPopup("Virtual background disabled");
         }
     } catch (error) {

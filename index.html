@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/vb-2-1-0/agora-extension-virtual-background.js"></script>
     <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/aidenoiser/index.js"></script>
+    <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/agora-beauty/agora-extension-beauty.js"></script>
     <script type="text/javascript" src="https://unpkg.com/default-passive-events"></script>
     <style>
         /* Update button colors */
@@ -167,6 +168,45 @@
             margin-top: 5px;
             color: #666;
         }
+
+        .beauty-controls {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ff69b4;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            max-width: 800px;
+        }
+        
+        .beauty-controls .input-group {
+            flex: 1;
+            min-width: 0;
+            margin: 0 5px;
+        }
+        
+        .beauty-controls .input-group label {
+            color: white;
+            font-size: 12px;
+            margin-bottom: 2px;
+            display: block;
+        }
+        
+        .beauty-controls input[type="range"] {
+            width: 100%;
+            max-width: 150px;
+        }
+        
+        .beauty-controls .slider-container span {
+            color: white;
+            font-size: 12px;
+            min-width: 30px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -312,6 +352,45 @@
                 <button id="switchStreamBtn">Set to Low Quality</button>
                 <button id="virtualBgBtn">Toggle Virtual Background</button>
                 <button id="ainsBtn">Toggle AINS</button>
+                <button id="beautyBtn">Toggle Beauty</button>
+            </div>
+
+            <div id="beautyControls" class="beauty-controls" style="display: none;">
+                <div class="input-group">
+                    <label for="contrastLevel">Contrast Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="contrastLevel" min="0" max="2" value="1">
+                        <span id="contrastValue">1</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="smoothnessLevel">Smoothness Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="smoothnessLevel" min="0" max="100" value="50">
+                        <span id="smoothnessValue">0.5</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="whiteLevel">White Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="whiteLevel" min="0" max="100" value="60">
+                        <span id="whiteValue">0.6</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="rednessLevel">Redness Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="rednessLevel" min="0" max="100" value="10">
+                        <span id="rednessValue">0.1</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="sharpnessLevel">Sharpness Level</label>
+                    <div class="slider-container">
+                        <input type="range" id="sharpnessLevel" min="0" max="100" value="30">
+                        <span id="sharpnessValue">0.3</span>
+                    </div>
+                </div>
             </div>
 
             <div class="stats-overview">
@@ -361,5 +440,12 @@
     </div>
 
     <script src="app.js"></script>
+    <script src="beauty.js"></script>
+    <script>
+        // Initialize beauty controls when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initBeautyControls();
+        });
+    </script>
 </body>
 </html> 
