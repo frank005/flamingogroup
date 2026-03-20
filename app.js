@@ -1179,6 +1179,8 @@ async function toggleVirtualBackground() {
             // Update state and UI before rebuilding pipeline
             isVirtualBackgroundEnabled = false;
             window.isVirtualBackgroundEnabled = false;
+            // VB cost events may stop arriving; force the chart to fall back to 0.
+            lastVirtualBgCost = 0;
             virtualBgBtn.textContent = "Enable Virtual Background";
             
             // Clean up all processors first to ensure a clean state
@@ -1584,7 +1586,10 @@ function updateStats(clientStats, clientStats2, localVideoStats, remoteVideoStat
         resolutionData.addRow(resolutionRow);
         
         // Update virtual background cost data
-        virtualBgCostData.addRow([time, lastVirtualBgCost || 0]);
+        virtualBgCostData.addRow([
+            time,
+            isVirtualBackgroundEnabled ? (lastVirtualBgCost || 0) : 0
+        ]);
         
         // Keep only last 60 seconds of data
         if (networkData.getNumberOfRows() > 60) networkData.removeRow(0);
