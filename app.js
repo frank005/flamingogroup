@@ -805,6 +805,101 @@ async function toggleCamera() {
     }
 }
 
+// Switch camera device (preserves virtual background/beauty via rebuildVideoPipeline)
+async function switchCamera() {
+    // Only meaningful during an active call.
+    if (!joined || !client) return;
+    if (!localVideoTrack) return;
+    if (!cameraSelect?.value) return;
+
+    const oldVideoTrack = localVideoTrack;
+    const wasMuted = !!oldVideoTrack.muted;
+
+    try {
+        showPopup("Switching camera...");
+
+        // Prefer in-place device switching so the published track and processors
+        // stay intact (mirrors `broadcastaway` behavior).
+        if (typeof oldVideoTrack.setDevice === 'function') {
+            await oldVideoTrack.setDevice(cameraSelect.value);
+
+            // Ensure local preview continues showing the correct track.
+            if (!wasMuted) {
+                localVideoTrack.play("localVideo");
+            } else if (localVideo) {
+                localVideo.innerHTML = '<div class="no-video"></div>';
+            }
+
+            // Keep global reference for beauty pipeline.
+            window.localVideoTrack = localVideoTrack;
+
+            showPopup("Camera switched");
+            return;
+        }
+
+        // Remove any existing pipeline from the current track.
+        if (window.cleanupProcessors) {
+            await window.cleanupProcessors();
+        } else {
+            try {
+                await oldVideoTrack.unpipe();
+            } catch {
+                // Best-effort; not fatal.
+            }
+        }
+
+        // Unpublish old track and close it.
+        try {
+            // Agora Web SDK expects an array of tracks to unpublish.
+            await client.unpublish([oldVideoTrack]);
+        } catch (e) {
+            console.warn("Failed to unpublish old video track:", e);
+        }
+
+        try {
+            oldVideoTrack.close();
+        } catch (e) {
+            console.warn("Failed to close old video track:", e);
+        }
+
+        // Create a new camera track for the selected device.
+        localVideoTrack = await AgoraRTC.createCameraVideoTrack({
+            deviceId: cameraSelect.value,
+            encoderConfig: videoProfileSelect?.value,
+            scalabiltyMode: isSVCEnabled ? "3SL3TL" : undefined
+        });
+
+        // Keep global reference used by beauty.js.
+        window.localVideoTrack = localVideoTrack;
+
+        if (wasMuted) {
+            await localVideoTrack.setMuted(true);
+            localVideo.innerHTML = '<div class="no-video"></div>';
+        } else {
+            localVideo.innerHTML = '';
+            localVideoTrack.play("localVideo");
+        }
+
+        // Rebuild pipeline so virtual background/beauty reattach to new track.
+        // Do this before publishing when possible to ensure the outgoing stream uses processors.
+        if (window.rebuildVideoPipeline) {
+            await window.rebuildVideoPipeline();
+            // rebuildVideoPipeline internally unpipes/re-pipes; ensure local preview continues.
+            if (!wasMuted) {
+                localVideoTrack.play("localVideo");
+            }
+        }
+
+        // Publish the new video track.
+        await client.publish([localVideoTrack]);
+
+        showPopup("Camera switched");
+    } catch (error) {
+        console.error("Error switching camera:", error);
+        showPopup("Failed to switch camera");
+    }
+}
+
 // Toggle dual stream
 async function toggleDualStream() {
     if (!client) return;
@@ -1620,6 +1715,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (leaveBtn) leaveBtn.addEventListener('click', leaveChannel);
     if (muteMicBtn) muteMicBtn.addEventListener('click', toggleMicrophone);
     if (muteCameraBtn) muteCameraBtn.addEventListener('click', toggleCamera);
+    if (cameraSelect) cameraSelect.addEventListener('change', switchCamera);
     if (dualStreamBtn) dualStreamBtn.addEventListener('click', toggleDualStream);
     if (switchStreamBtn) switchStreamBtn.addEventListener('click', switchStream);
     if (virtualBgBtn) virtualBgBtn.addEventListener('click', toggleVirtualBackground);

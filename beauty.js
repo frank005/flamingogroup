@@ -52,11 +52,12 @@ async function cleanupProcessors() {
         }
         
         // Then disable and unpipe virtual background processor if it exists
-        if (virtualBgProcessor) {
+        const vbProcessor = window.virtualBackgroundProcessor || virtualBgProcessor;
+        if (vbProcessor) {
             console.log("Cleaning up virtual background processor");
             try {
-                await virtualBgProcessor.unpipe();
-                await virtualBgProcessor.disable();
+                await vbProcessor.unpipe();
+                await vbProcessor.disable();
                 console.log("Virtual background processor cleaned up");
             } catch (error) {
                 console.error("Error cleaning up virtual background processor:", error);
