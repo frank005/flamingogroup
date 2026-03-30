@@ -1,4 +1,7 @@
 // Agora client configuration
+// Local preview: use "contain" so the full frame (and corner watermarks) stays inside the box; SDK default for camera is often "cover" which crops.
+window.LOCAL_VIDEO_PLAY_CONFIG = { fit: 'contain' };
+
 let client;
 let localAudioTrack;
 let localVideoTrack;
@@ -85,6 +88,8 @@ const dualStreamBtn = document.getElementById('dualStreamBtn');
 const switchStreamBtn = document.getElementById('switchStreamBtn');
 const virtualBgBtn = document.getElementById('virtualBgBtn');
 const ainsBtn = document.getElementById('ainsBtn');
+const beautyBtn = document.getElementById('beautyBtn');
+const watermarkBtn = document.getElementById('watermarkBtn');
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
 const localVideoStats = document.getElementById('localVideoStats');
@@ -565,7 +570,7 @@ async function createLocalTracks() {
 
         // Play local video track
         localVideo.innerHTML = ''; // Clear no-video div
-        localVideoTrack.play("localVideo");
+        localVideoTrack.play("localVideo", window.LOCAL_VIDEO_PLAY_CONFIG);
     } catch (error) {
         console.error("Error creating local tracks:", error);
         throw error;
@@ -646,11 +651,17 @@ async function joinChannel() {
         leaveBtn.style.opacity = '1';
 
         // Enable control buttons
-        [muteMicBtn, muteCameraBtn, switchStreamBtn, virtualBgBtn, ainsBtn].forEach(btn => {
+        [muteMicBtn, muteCameraBtn, switchStreamBtn, virtualBgBtn, ainsBtn, beautyBtn].forEach(btn => {
+            if (!btn) return;
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.style.background = '#fff3cd';
         });
+        if (watermarkBtn) {
+            watermarkBtn.disabled = false;
+            watermarkBtn.style.opacity = '1';
+            watermarkBtn.style.background = '#fff3cd';
+        }
 
         // Mute audio after joining
         if (localAudioTrack) {
@@ -672,6 +683,14 @@ async function leaveChannel() {
     try {
         // Stop stats monitoring
         stopStatsMonitoring();
+
+        if (window.isWatermarkEnabled && typeof window.disableWatermark === 'function') {
+            try {
+                await window.disableWatermark();
+            } catch (e) {
+                console.warn('Failed to disable watermark on leave:', e);
+            }
+        }
         
         // Clean up processors
         if (window.cleanupProcessors) {
@@ -741,9 +760,9 @@ async function leaveChannel() {
         // Reset UI buttons
         virtualBgBtn.textContent = "Enable Virtual Background";
         ainsBtn.textContent = "Enable AINS";
-        if (document.getElementById('beautyBtn')) {
-            document.getElementById('beautyBtn').textContent = "Enable Beauty";
-        }
+        if (beautyBtn) beautyBtn.textContent = "Enable Beauty";
+        window.isWatermarkEnabled = false;
+        if (watermarkBtn) watermarkBtn.textContent = "Enable Watermark";
         
         // Hide beauty controls
         const beautyControls = document.getElementById('beautyControls');
@@ -796,7 +815,7 @@ async function toggleCamera() {
                 localVideo.innerHTML = '<div class="no-video"></div>';
             } else {
                 localVideo.innerHTML = '';
-                localVideoTrack.play("localVideo");
+                localVideoTrack.play("localVideo", window.LOCAL_VIDEO_PLAY_CONFIG);
             }
         } catch (error) {
             console.error("Error toggling camera:", error);
@@ -825,7 +844,7 @@ async function switchCamera() {
 
             // Ensure local preview continues showing the correct track.
             if (!wasMuted) {
-                localVideoTrack.play("localVideo");
+                localVideoTrack.play("localVideo", window.LOCAL_VIDEO_PLAY_CONFIG);
             } else if (localVideo) {
                 localVideo.innerHTML = '<div class="no-video"></div>';
             }
@@ -877,7 +896,7 @@ async function switchCamera() {
             localVideo.innerHTML = '<div class="no-video"></div>';
         } else {
             localVideo.innerHTML = '';
-            localVideoTrack.play("localVideo");
+            localVideoTrack.play("localVideo", window.LOCAL_VIDEO_PLAY_CONFIG);
         }
 
         // Rebuild pipeline so virtual background/beauty reattach to new track.
@@ -886,7 +905,7 @@ async function switchCamera() {
             await window.rebuildVideoPipeline();
             // rebuildVideoPipeline internally unpipes/re-pipes; ensure local preview continues.
             if (!wasMuted) {
-                localVideoTrack.play("localVideo");
+                localVideoTrack.play("localVideo", window.LOCAL_VIDEO_PLAY_CONFIG);
             }
         }
 
@@ -990,6 +1009,8 @@ function showPopup(message) {
     }, 5000); // Increased from 3000 to 5000ms
 }
 
+window.showPopup = showPopup;
+
 // Helper function to load media with CORS handling
 async function loadMediaWithCORS(url, type) {
     try {
@@ -1085,12 +1106,9 @@ async function toggleVirtualBackground() {
             console.log("Enabling virtual background...");
             showPopup("Enabling virtual background...");
             
-            // Clean up all processors first to ensure a clean state
-            if (window.cleanupProcessors) {
-                console.log("Cleaning up processors before enabling virtual background");
-                await window.cleanupProcessors();
-            }
-            
+            // rebuildVideoPipeline() starts with cleanupProcessors — avoid double teardown here
+            // (was causing heavy flicker when watermark was already on).
+
             // Create and register virtual background extension
             const vb = new VirtualBackgroundExtension();
             AgoraRTC.registerExtensions([vb]);
@@ -1156,8 +1174,8 @@ async function toggleVirtualBackground() {
             }
 
             virtualBackgroundProcessor.setOptions(options);
-            await virtualBackgroundProcessor.enable();
-            
+            // Enable once inside rebuildVideoPipeline (avoids double-enable flicker before pipe)
+
             // Store the processor in the window object so beauty.js can access it
             window.virtualBackgroundProcessor = virtualBackgroundProcessor;
             
@@ -1166,8 +1184,9 @@ async function toggleVirtualBackground() {
             window.isVirtualBackgroundEnabled = true;
             virtualBgBtn.textContent = "Disable Virtual Background";
             
-            // Use rebuildVideoPipeline to set up the pipeline
+            // Use rebuildVideoPipeline to set up the pipeline (wait two frames so GPU/preview settle — less flash when watermark was already on)
             if (window.rebuildVideoPipeline) {
+                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 await window.rebuildVideoPipeline();
             }
             
@@ -1429,6 +1448,13 @@ function stopStatsMonitoring() {
 
 function updateStats(clientStats, clientStats2, localVideoStats, remoteVideoStats, localAudioStats, remoteAudioStats) {
     const duration = Math.floor((Date.now() - startTime) / 1000);
+
+    // Expose current outgoing send resolution so watermark auto-corners can follow profile changes.
+    window.currentSendResolutionWidth = Number(localVideoStats?.sendResolutionWidth) || 0;
+    window.currentSendResolutionHeight = Number(localVideoStats?.sendResolutionHeight) || 0;
+    if (window.maybeRefreshWatermarkLayoutForResolutionChange) {
+        Promise.resolve(window.maybeRefreshWatermarkLayoutForResolutionChange()).catch(() => {});
+    }
     
     // Helper function to get colored status text
     const getColoredStatus = (status, type) => {
@@ -1725,6 +1751,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (switchStreamBtn) switchStreamBtn.addEventListener('click', switchStream);
     if (virtualBgBtn) virtualBgBtn.addEventListener('click', toggleVirtualBackground);
     if (ainsBtn) ainsBtn.addEventListener('click', toggleAins);
+    if (watermarkBtn) {
+        watermarkBtn.addEventListener('click', async () => {
+            if (window.toggleWatermark) {
+                await window.toggleWatermark();
+            } else {
+                showPopup('Watermark module not loaded');
+            }
+        });
+    }
 
     // Set initial button states
     if (leaveBtn) {
@@ -1732,12 +1767,15 @@ document.addEventListener('DOMContentLoaded', () => {
         leaveBtn.style.opacity = '0.5';
     }
     
-    [muteMicBtn, muteCameraBtn, dualStreamBtn, switchStreamBtn, virtualBgBtn, ainsBtn].forEach(btn => {
-        if (btn) {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-        }
+    [muteMicBtn, muteCameraBtn, dualStreamBtn, switchStreamBtn, virtualBgBtn, ainsBtn, beautyBtn].forEach(btn => {
+        if (!btn) return;
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
     });
+    if (watermarkBtn) {
+        watermarkBtn.disabled = false;
+        watermarkBtn.style.opacity = '1';
+    }
 
     // Handle window resize for charts
     window.addEventListener('resize', () => {

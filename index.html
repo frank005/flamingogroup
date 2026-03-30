@@ -10,6 +10,7 @@
     <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/vb-2-1-0/agora-extension-virtual-background.js"></script>
     <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/aidenoiser/index.js"></script>
     <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/agora-beauty/agora-extension-beauty.js"></script>
+    <script src="https://agora-packages.s3.us-west-2.amazonaws.com/ext/watermark/index.js"></script>
     <script type="text/javascript" src="https://unpkg.com/default-passive-events"></script>
     <style>
         /* Update button colors */
@@ -316,7 +317,47 @@
                         <span id="blurValue">Medium</span>
                     </div>
                 </div>
-                
+                <div class="input-group" id="watermarkSourceGroup">
+                    <label for="watermarkSource">Watermark Source</label>
+                    <select id="watermarkSource">
+                        <option value="url">Image URL</option>
+                        <option value="dom">DOM &lt;img&gt; id</option>
+                    </select>
+                </div>
+                <div class="input-group" id="watermarkUrlGroup">
+                    <label for="watermarkUrl">Watermark URL</label>
+                    <input type="text" id="watermarkUrl" value="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9a9.png">
+                </div>
+                <div class="input-group" id="watermarkDomGroup" style="display:none;">
+                    <label for="watermarkImgId">Watermark DOM image id</label>
+                    <input type="text" id="watermarkImgId" value="watermarkDomImg">
+                </div>
+                <div class="input-group" id="watermarkLayoutGroup">
+                    <label for="watermarkLayoutMode">Watermark Layout</label>
+                    <select id="watermarkLayoutMode">
+                        <option value="manual">Manual</option>
+                        <option value="top-left">Top Left</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="bottom-right" selected>Bottom Right</option>
+                    </select>
+                </div>
+                <div class="input-group" id="watermarkPosGroup">
+                    <label>Position / Margin</label>
+                    <div class="slider-container">
+                        <input type="number" id="watermarkX" value="10" style="max-width:80px;" title="x or margin x">
+                        <input type="number" id="watermarkY" value="10" style="max-width:80px;" title="y or margin y">
+                    </div>
+                </div>
+                <div class="input-group" id="watermarkSizeGroup">
+                    <label>Size / Opacity</label>
+                    <div class="slider-container">
+                        <input type="number" id="watermarkW" value="100" placeholder="w" style="max-width:70px;">
+                        <input type="number" id="watermarkH" value="50" placeholder="h" style="max-width:70px;">
+                        <input type="number" id="watermarkAlpha" value="0.8" min="0" max="1" step="0.05" style="max-width:70px;">
+                    </div>
+                </div>
+                <img id="watermarkDomImg" crossorigin="anonymous" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9a9.png" alt="" width="100" height="50" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
                 
                 <div class="input-group horizontal-group">
                     <label for="scale-list">ScaleDownBy</label>
@@ -353,6 +394,7 @@
                 <button id="virtualBgBtn">Toggle Virtual Background</button>
                 <button id="ainsBtn">Toggle AINS</button>
                 <button id="beautyBtn">Toggle Beauty</button>
+                <button id="watermarkBtn">Enable Watermark</button>
             </div>
 
             <div id="beautyControls" class="beauty-controls" style="display: none;">
@@ -441,8 +483,15 @@
 
     <script src="app.js"></script>
     <script src="beauty.js"></script>
+    <script src="watermark.js"></script>
     <script>
-        // Initialize beauty controls when the page loads
+        window.addEventListener('load', function () {
+            if (!window.toggleWatermark) {
+                window.toggleWatermark = async function () {
+                    if (window.showPopup) window.showPopup('Watermark script failed to load (see console).');
+                };
+            }
+        });
         document.addEventListener('DOMContentLoaded', () => {
             initBeautyControls();
         });
