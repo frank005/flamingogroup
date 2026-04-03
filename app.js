@@ -1,3 +1,11 @@
+// Agora logging: enableLogUpload must be the first AgoraRTC call (before registerExtensions in beauty.js, etc.).
+if (typeof AgoraRTC !== 'undefined' && typeof AgoraRTC.enableLogUpload === 'function') {
+    AgoraRTC.enableLogUpload();
+}
+if (typeof AgoraRTC !== 'undefined' && typeof AgoraRTC.setLogLevel === 'function') {
+    AgoraRTC.setLogLevel(0); // 0 = DEBUG — full API logs (max verbosity; not the SDK default)
+}
+
 // Agora client configuration
 // Local preview: use "contain" so the full frame (and corner watermarks) stays inside the box; SDK default for camera is often "cover" which crops.
 window.LOCAL_VIDEO_PLAY_CONFIG = { fit: 'contain' };
